@@ -1,0 +1,9 @@
+{
+  "extends": "standard",
+  "rules": {
+    "semi": 0,
+    "no-var": 2,
+    "prefer-arrow-callback": 2,
+    "space-before-function-paren": 0
+  }
+}

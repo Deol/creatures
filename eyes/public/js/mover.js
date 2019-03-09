@@ -1,62 +1,67 @@
-/*jslint es5:true, indent: 2 */
-/*global Vue, io */
+/* jslint es5:true, indent: 2 */
+/* global Vue, io */
 /* exported vm */
 'use strict';
-var socket = io();
+const socket = io();
 
-var vm = new Vue({
+/* eslint-disable-next-line no-new */
+new Vue({
   el: '#app',
   data: {
     eyePos: {},
-    mouseDown: false,
-    turned: ''
+    turned: '',
+    mouseDown: false
   },
-  created: function () {
-    socket.on('moved:motors', function (motors) {
-      const {left, right} = motors;
-      if (left && !right)
-        this.turned = "LEFT";
-      if (left && right)
-        this.turned = "FORWARD";
-      if (!left && right)
-        this.turned = "RIGHT";
-      if (!left && !right)
-        this.turned = "BACKWARD";
-    }.bind(this));
-    socket.on('moved:servo', function () {
-      this.turned = "SERVO";
-    }.bind(this));
+  created() {
+    socket.on('moved:motors', (motors) => {
+      const { left, right } = motors;
+      const sign = `${+left}${+right}`;
+      const signMap = new Map([
+        ['10', 'LEFT'], // left && !right
+        ['01', 'RIGHT'], // !left && right
+        ['11', 'FORWARD'], // left && right
+        ['00', 'BACKWARD'] // !left && !right
+      ]);
+      this.turned = signMap.get(sign);
+    });
+    socket.on('moved:servo', () => {
+      this.turned = 'SERVO';
+    });
   },
   methods: {
-    pressed: function () {
+    pressed() {
       this.mouseDown = true;
     },
-    released: function () {
+    released() {
       this.mouseDown = false;
     },
-    moveEyes: function (event) {
-      var offset = {x: event.currentTarget.getBoundingClientRect().left,
-                    y: event.currentTarget.getBoundingClientRect().top};
-        if (this.mouseDown) {
-          this.eyePos = { x: event.clientX - 10 - offset.x,
-                          y: event.clientY - 10 - offset.y };
-          socket.emit("move:eyes", this.eyePos);
-        }
+    moveEyes(event) {
+      let offset = {
+        x: event.currentTarget.getBoundingClientRect().left,
+        y: event.currentTarget.getBoundingClientRect().top
+      };
+      if (this.mouseDown) {
+        this.eyePos = {
+          x: event.clientX - 10 - offset.x,
+          y: event.clientY - 10 - offset.y
+        };
+        socket.emit('move:eyes', this.eyePos);
+      }
     },
-    turnLeft: function () {
-      socket.emit('move:motors', {left: true, right: false});
+    turnLeft() {
+      socket.emit('move:motors', { left: true, right: false });
     },
-    turnRight: function () {
-      socket.emit('move:motors', {left: false, right: true});
+    turnRight() {
+      socket.emit('move:motors', { left: false, right: true });
     },
-    driveForward: function () {
-      socket.emit('move:motors', {left: true, right: true});
+    driveForward() {
+      socket.emit('move:motors', { left: true, right: true });
     },
-    driveBackward: function () {
-      socket.emit('move:motors', {left: false, right: false});
+    driveBackward() {
+      socket.emit('move:motors', { left: false, right: false });
     },
-    driveServo: function () {
+    driveServo() {
       socket.emit('move:servo');
-    },
+    }
   }
 });
